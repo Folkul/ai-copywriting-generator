@@ -11,6 +11,30 @@ from config import MAX_IMAGE_BYTES, MAX_IMAGES, QWEN_API_KEY, QWEN_VL_MODEL
 
 dashscope.api_key = QWEN_API_KEY
 
+# #region agent log
+def _agent_debug_log(location: str, message: str, data: dict, hypothesis_id: str = "") -> None:
+    try:
+        import json
+        import time
+        from pathlib import Path
+
+        p = Path(__file__).resolve().parent / "debug-cadaef.log"
+        line = {
+            "sessionId": "cadaef",
+            "timestamp": int(time.time() * 1000),
+            "location": location,
+            "message": message,
+            "hypothesisId": hypothesis_id,
+            "data": data,
+        }
+        with p.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(line, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+
+# #endregion
+
 from llm.caption import generate_caption  # noqa: E402
 
 __all__ = [
@@ -86,6 +110,14 @@ def get_image_description(
     verbose=False 时不向 stdout 打印（供 Web 使用）；可传 log 回调收集信息。
     """
     if not QWEN_API_KEY:
+        # #region agent log
+        _agent_debug_log(
+            "vision_tools.py:get_image_description",
+            "empty QWEN_API_KEY",
+            {"n_paths_hint": str(type(image_paths).__name__)},
+            "H2",
+        )
+        # #endregion
         _say("错误：未配置 QWEN_API_KEY，请在 .env 中设置。", verbose, log)
         return None
 
@@ -130,25 +162,72 @@ def get_image_description(
 
     messages = [{"role": "user", "content": content}]
 
+    # #region agent log
+    _agent_debug_log(
+        "vision_tools.py:before_vl_call",
+        "calling VL",
+        {"model": QWEN_VL_MODEL, "n_images": n, "key_len": len(QWEN_API_KEY)},
+        "H3-H5",
+    )
+    # #endregion
+
     try:
         response = dashscope.MultiModalConversation.call(
             model=QWEN_VL_MODEL,
             messages=messages,
         )
     except Exception as e:  # noqa: BLE001
+        # #region agent log
+        _agent_debug_log(
+            "vision_tools.py:vl_exception",
+            str(e)[:300],
+            {"exc_type": type(e).__name__},
+            "H5",
+        )
+        # #endregion
         _say(f"图片分析失败：调用异常 — {e}", verbose, log)
         return None
 
-    if getattr(response, "status_code", None) == 200:
+    sc = getattr(response, "status_code", None)
+    code = getattr(response, "code", None)
+    msg = getattr(response, "message", None)
+    # #region agent log
+    _agent_debug_log(
+        "vision_tools.py:vl_response_meta",
+        "after VL call",
+        {
+            "status_code": sc,
+            "code": code,
+            "message": (str(msg)[:400] if msg is not None else None),
+        },
+        "H3-H4",
+    )
+    # #endregion
+
+    if sc == 200:
         description = _extract_vl_text(response)
         if not description:
+            # #region agent log
+            _agent_debug_log(
+                "vision_tools.py:extract_fail",
+                "200 but no text",
+                {"has_output": hasattr(response, "output")},
+                "H4",
+            )
+            # #endregion
             _say("图片分析失败：返回格式异常 — 未能解析出文本。", verbose, log)
             return None
+        # #region agent log
+        _agent_debug_log(
+            "vision_tools.py:success",
+            "description ok",
+            {"desc_len": len(description)},
+            "H3",
+        )
+        # #endregion
         _say(f"AI图片描述: {description}", verbose, log)
         return description
 
-    code = getattr(response, "code", None)
-    msg = getattr(response, "message", None)
     _say(f"图片分析失败: {code} — {msg}", verbose, log)
     return None
 

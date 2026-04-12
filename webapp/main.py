@@ -20,18 +20,7 @@ from vision_tools import get_image_description
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 SUPPLEMENT_MAX_LEN = 4000
-LYRIC_SNIPPET_MAX = 1200
-
-# 用户选择的「歌词感」会并入补充说明发给模型
-LYRIC_MODE_HINTS: dict[str, str] = {
-    "none": "",
-    "imagistic": "【歌词感】希望文字带有歌词般的节奏、意象与留白，不必押韵；避免说明书或广告腔。",
-    "ballad": "【歌词感】偏抒情慢歌气质：克制、有余味，少用堆砌形容词。",
-    "rock": "【歌词感】偏摇滚气质：短句、有力度，可略带锋芒但保持得体。",
-    "rap": "【歌词感】偏说唱式节奏与排比；用于短句须收敛，避免生硬押韵。",
-    "classic": "【歌词感】偏古风歌词意境：可借用意象，勿生僻文言堆砌。",
-}
-ALLOWED_LYRIC_MODES = frozenset(LYRIC_MODE_HINTS.keys())
+INSPIRATION_MAX = 1200
 
 app = FastAPI(title="配图说", version="1.0")
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
@@ -39,6 +28,11 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 def _bool_form(v: str) -> bool:
     return str(v).lower() in ("1", "true", "yes", "on")
+
+
+def length_hint_from_bounds(min_chars: int, max_chars: int) -> str:
+    """由字数上下限生成传给提示词的「软」长度说明（硬校验仍由 min/max 控制）。"""
+    return f"字数必须在 {min_chars} 到 {max_chars} 个字符之间（与下文硬性字数区间一致）。"
 
 
 def _extra_blocked_from_form(raw: str | None) -> list[str]:
@@ -64,27 +58,19 @@ def _clean_supplement(s: str | None) -> str | None:
     return t[:SUPPLEMENT_MAX_LEN]
 
 
-def merge_supplement_with_lyrics(
+def merge_supplement_with_inspiration(
     supplement: str | None,
-    lyric_mode: str | None,
-    lyric_snippet: str | None,
+    inspiration: str | None,
 ) -> str | None:
-    """将自由补充与歌词感、歌词摘录合并为一条发给模型的补充说明。"""
+    """将自由补充与「引用灵感」合并为一条发给模型的补充说明。"""
     parts: list[str] = []
     base = (supplement or "").strip()
     if base:
         parts.append(base)
-    mode = (lyric_mode or "none").strip().lower()
-    if mode not in ALLOWED_LYRIC_MODES:
-        mode = "none"
-    hint = LYRIC_MODE_HINTS.get(mode, "")
-    if hint:
-        parts.append(hint)
-    snip = (lyric_snippet or "").strip()[:LYRIC_SNIPPET_MAX]
-    if snip:
+    ins = (inspiration or "").strip()[:INSPIRATION_MAX]
+    if ins:
         parts.append(
-            "【参考歌词摘录】以下仅作语气、意象与节奏参考，请改写融合进短句，勿整句原样照抄：\n"
-            + snip
+            "【引用灵感】（仅作语气、意象或句式参考，请自然融入短句，勿整段照搬）\n" + ins
         )
     if not parts:
         return None
@@ -157,8 +143,7 @@ def index_page() -> FileResponse:
 @app.post("/api/full")
 async def api_full(
     files: Annotated[list[UploadFile], File()],
-    style: Annotated[str, Form()] = "幽默风趣",
-    length_hint: Annotated[str, Form()] = "不超过50字",
+    style: Annotated[str, Form()] = "简约干净",
     use_emoji: Annotated[str, Form()] = "true",
     use_punctuation: Annotated[str, Form()] = "true",
     provider: Annotated[str, Form()] = "deepseek",
@@ -166,9 +151,8 @@ async def api_full(
     max_chars: Annotated[int, Form()] = 72,
     extra_blocked: Annotated[str | None, Form()] = None,
     supplement: Annotated[str | None, Form()] = None,
+    inspiration: Annotated[str | None, Form()] = None,
     output_language: Annotated[str, Form()] = "zh-Hans",
-    lyric_mode: Annotated[str, Form()] = "none",
-    lyric_snippet: Annotated[str | None, Form()] = None,
 ) -> JSONResponse:
     """上传 1～9 张图：看图一次，再生成三条候选文案。"""
     if min_chars > max_chars:
@@ -178,10 +162,11 @@ async def api_full(
     if len(files) > 9:
         raise HTTPException(400, "最多 9 张图片")
 
+    length_hint = length_hint_from_bounds(min_chars, max_chars)
     blocked = merge_blocked_words(_extra_blocked_from_form(extra_blocked))
     ue = _bool_form(use_emoji)
     up = _bool_form(use_punctuation)
-    sup = merge_supplement_with_lyrics(supplement, lyric_mode, lyric_snippet)
+    sup = merge_supplement_with_inspiration(supplement, inspiration)
     olang = normalize_output_language(output_language)
     if olang not in OUTPUT_LANGUAGE_INSTRUCTIONS:
         olang = "zh-Hans"
@@ -249,8 +234,7 @@ async def api_full(
 
 class RegenerateBody(BaseModel):
     description: str = Field(..., min_length=1, max_length=12000)
-    style: str = "幽默风趣"
-    length_hint: str = "不超过50字"
+    style: str = "简约干净"
     use_emoji: bool = True
     use_punctuation: bool = True
     provider: str = "deepseek"
@@ -258,9 +242,8 @@ class RegenerateBody(BaseModel):
     max_chars: int = Field(72, ge=1, le=500)
     extra_blocked_lines: str = ""
     supplement: str = Field(default="", max_length=SUPPLEMENT_MAX_LEN)
+    inspiration: str = Field(default="", max_length=INSPIRATION_MAX)
     output_language: str = "zh-Hans"
-    lyric_mode: str = "none"
-    lyric_snippet: str = Field(default="", max_length=LYRIC_SNIPPET_MAX)
 
     @model_validator(mode="after")
     def _bounds(self) -> RegenerateBody:
@@ -272,12 +255,12 @@ class RegenerateBody(BaseModel):
 @app.post("/api/regenerate")
 def api_regenerate(body: RegenerateBody) -> JSONResponse:
     """在已有画面描述上，仅更新三条候选文案。"""
+    length_hint = length_hint_from_bounds(body.min_chars, body.max_chars)
     extra = _extra_blocked_from_form(body.extra_blocked_lines or None)
     blocked = merge_blocked_words(extra)
-    sup = merge_supplement_with_lyrics(
+    sup = merge_supplement_with_inspiration(
         body.supplement or None,
-        body.lyric_mode,
-        body.lyric_snippet or None,
+        body.inspiration or None,
     )
     olang = normalize_output_language(body.output_language)
     if olang not in OUTPUT_LANGUAGE_INSTRUCTIONS:
@@ -286,7 +269,7 @@ def api_regenerate(body: RegenerateBody) -> JSONResponse:
     raw = generate_three_captions(
         body.description.strip(),
         body.style,
-        body.length_hint,
+        length_hint,
         body.min_chars,
         body.max_chars,
         provider=body.provider.strip() or None,
@@ -306,7 +289,7 @@ def api_regenerate(body: RegenerateBody) -> JSONResponse:
         diversify_retry=True,
         description=body.description,
         style=body.style,
-        length_hint=body.length_hint,
+        length_hint=length_hint,
         use_emoji=body.use_emoji,
         use_punctuation=body.use_punctuation,
         provider=body.provider.strip() or "deepseek",

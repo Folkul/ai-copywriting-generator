@@ -11,170 +11,146 @@
       <header class="hero">
         <p class="eyebrow">多图 · 配文</p>
         <h1>把画面写成几句话</h1>
-        <p class="lead">
-          上传最多 9 张图，描述画面后，一次给出三种不同说法；想换语气可再生成一版。
-        </p>
+        <p class="lead">选好图，点生成；语气与字数在下方高级设置里可调。</p>
       </header>
 
-      <p class="scenario-strip card" role="note">
-        今天拍了美食？娃又闹笑话了？出去玩了？选好图片，剩下的交给 AI。
-      </p>
-
       <form id="f" class="card form-card">
-        <div
-          class="drop"
-          id="drop"
-          tabindex="0"
-          role="button"
-          aria-label="将图片拖到此处或点击选择"
-        >
-          <span class="drop-icon" aria-hidden="true">＋</span>
-          <p><strong>拖放图片到这里</strong>，或点击下方选择（最多 9 张）</p>
-        </div>
-        <div class="btns">
-          <label class="filebtn"
-            ><input id="pick" type="file" accept="image/*" multiple />选择图片</label
+        <section class="panel-block panel-primary" aria-label="上传与生成">
+          <div
+            class="drop"
+            id="drop"
+            tabindex="0"
+            role="button"
+            aria-label="将图片拖到此处或点击选择"
           >
-          <label class="filebtn"
-            ><input id="folder" type="file" accept="image/*" webkitdirectory multiple />整个文件夹</label
-          >
-          <button type="button" class="btn-ghost" id="clear">清空</button>
-        </div>
-        <div class="thumbs" id="thumbs"></div>
-        <p class="hint" id="count">已选 0 张</p>
-
-        <h3 class="section-title">语气与长度</h3>
-        <p class="persona-intro">点一下人设，自动填好风格；也可再改几个字。</p>
-        <div class="persona-chips" id="persona_chips">
-          <button type="button" class="chip" data-style="文艺青年（小忧郁、偏爱意象与留白，不大白话堆砌）" data-tone="fresh" data-hint="示例：傍晚把影子拉得很长，人却轻了。">
-            文艺青年
-          </button>
-          <button type="button" class="chip" data-style="搞笑风（自黑、夸张、谐音梗，轻松得体不冒犯）" data-tone="hot" data-hint="示例：这顿饭，我的胃已经单方面官宣了。">
-            搞笑女/男
-          </button>
-          <button type="button" class="chip" data-style="宝妈晒娃（温柔可爱、记录成长小细节、口语亲切）" data-tone="fresh" data-hint="示例：今天又解锁一个「人类幼崽迷惑行为」。">
-            宝妈晒娃
-          </button>
-          <button type="button" class="chip" data-style="职场卷王（正能量、成就感、打鸡血但不说教）" data-tone="hot" data-hint="示例：本周 KPI：把开心也写进待办里。">
-            职场卷王
-          </button>
-        </div>
-        <p class="persona-hint" id="persona_hint" hidden></p>
-        <div class="row cols-2">
-          <div>
-            <label for="style">风格</label>
-            <input id="style" name="style" type="text" list="styles" value="幽默风趣" />
-            <datalist id="styles">
-              <option value="幽默风趣"></option>
-              <option value="文艺青年"></option>
-              <option value="治愈温柔"></option>
-              <option value="极简冷淡"></option>
-              <option value="旅行记录"></option>
-            </datalist>
+            <span class="drop-icon" aria-hidden="true">＋</span>
+            <p class="drop-title"><strong>添加图片</strong></p>
+            <p class="drop-sub">拖放、点击选择，或选整个文件夹</p>
           </div>
-          <div>
-            <label for="length_hint">长度说明</label>
-            <input id="length_hint" name="length_hint" type="text" value="不超过50字" />
+          <div class="btns">
+            <label class="filebtn"
+              ><input id="pick" type="file" accept="image/*" multiple />选择图片</label
+            >
+            <label class="filebtn"
+              ><input id="folder" type="file" accept="image/*" webkitdirectory multiple />文件夹</label
+            >
+            <button type="button" class="btn-ghost" id="clear">清空</button>
           </div>
-        </div>
-
-        <div class="row cols-2">
-          <div>
-            <label for="output_language">输出语言</label>
-            <select id="output_language" name="output_language">
-              <option value="zh-Hans" selected>简体中文</option>
-              <option value="zh-Hant">繁体中文</option>
-              <option value="en">English</option>
-              <option value="fr">Français</option>
-              <option value="ja">日本語</option>
-              <option value="ko">한국어</option>
-            </select>
+          <div class="thumbs" id="thumbs"></div>
+          <p class="hint" id="count">已选 0 张</p>
+          <div class="btns btns-primary">
+            <button type="submit" class="primary btn-large" id="submit">生成三条</button>
+            <button type="button" class="btn-secondary btn-large" id="regen" disabled>换三条</button>
           </div>
-          <div>
-            <label for="provider">模型</label>
-            <select id="provider" name="provider">
-              <option value="deepseek">DeepSeek</option>
-              <option value="qwen">通义千问</option>
-            </select>
-          </div>
-        </div>
+        </section>
 
-        <div class="row cols-2">
-          <div>
-            <label for="min_chars">最短（字符数）</label>
-            <input id="min_chars" name="min_chars" type="number" min="1" max="500" value="10" />
-          </div>
-          <div>
-            <label for="max_chars">最长（字符数）</label>
-            <input id="max_chars" name="max_chars" type="number" min="1" max="500" value="72" />
-          </div>
-        </div>
+        <details class="adv-details panel-block">
+          <summary class="adv-summary">⚙️ 高级文案偏好（点击展开）</summary>
+          <div class="adv-inner">
+            <div class="row cols-2">
+              <div>
+                <label for="style">文案风格</label>
+                <select id="style" name="style">
+                  <option value="简约干净：句子短、留白多，少用形容词堆砌。" selected>
+                    简约干净 (Clean)
+                  </option>
+                  <option value="温暖治愈：语气柔和克制，像可信的朋友，避免鸡汤式说教。">
+                    温暖治愈 (Warm)
+                  </option>
+                  <option
+                    value="高级感／杂志风：克制、有层次，可略带版面感，避免广告口号与浮夸修辞。"
+                  >
+                    高级感／杂志风 (Editorial)
+                  </option>
+                  <option value="俏皮可爱：轻松有灵气，可适度玩梗，避免低俗与冒犯。">
+                    俏皮可爱 (Playful)
+                  </option>
+                  <option value="冷静叙事：偏客观白描与观察，少抒情断言，像简短手记。">
+                    冷静叙事 (Storytelling)
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label for="provider">模型</label>
+                <select id="provider" name="provider">
+                  <option value="deepseek">DeepSeek</option>
+                  <option value="qwen">通义千问</option>
+                </select>
+              </div>
+            </div>
 
-        <div class="row toggle cols-2">
-          <label><input id="use_emoji" type="checkbox" checked /> 允许 emoji</label>
-          <label><input id="use_punctuation" type="checkbox" checked /> 使用标点</label>
-        </div>
-        <div class="row toggle">
-          <label
-            ><input id="append_copy_tail" type="checkbox" />
-            复制时在末尾加一句小尾巴（仅复制，不改动页面上文案）</label
-          >
-        </div>
+            <div class="row cols-2">
+              <div>
+                <label for="min_chars">最短字数（字符）</label>
+                <input id="min_chars" name="min_chars" type="number" min="1" max="500" value="10" />
+              </div>
+              <div>
+                <label for="max_chars">最长字数（字符）</label>
+                <input id="max_chars" name="max_chars" type="number" min="1" max="500" value="72" />
+              </div>
+            </div>
 
-        <h3 class="section-title">补充与歌词</h3>
-        <div>
-          <label for="supplement">补充想法（可选）</label>
-          <textarea
-            id="supplement"
-            maxlength="4000"
-            placeholder="语气偏好、想点的题、避雷、参考句式…"
-          ></textarea>
-        </div>
-
-        <div class="lyric-panel">
-          <div class="row cols-2">
             <div>
-              <label for="lyric_mode">歌词感</label>
-              <select id="lyric_mode" name="lyric_mode">
-                <option value="none" selected>不使用</option>
-                <option value="imagistic">意象留白（通用）</option>
-                <option value="ballad">抒情慢歌</option>
-                <option value="rock">摇滚张力</option>
-                <option value="rap">说唱节奏</option>
-                <option value="classic">古风意象</option>
+              <label for="output_language">输出语言</label>
+              <select id="output_language" name="output_language">
+                <option value="zh-Hans" selected>简体中文</option>
+                <option value="zh-Hant">繁体中文</option>
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+                <option value="mix">🌐 中英夹杂（Casual mix）</option>
               </select>
             </div>
+
             <div>
-              <label for="lyric_snippet">歌词摘录（可选）</label>
+              <label for="supplement">补充想法（可选）</label>
               <textarea
-                id="lyric_snippet"
-                maxlength="1200"
-                rows="3"
-                placeholder="贴一两句喜欢的歌词，作语气与意象参考（勿过长）"
+                id="supplement"
+                maxlength="4000"
+                placeholder="想强调的细节、避雷、或一句参考语气…"
               ></textarea>
             </div>
+
+            <div>
+              <label for="inspiration">💡 引用灵感（选填）</label>
+              <textarea
+                id="inspiration"
+                maxlength="1200"
+                rows="2"
+                placeholder="比如：像陈奕迅歌词的感觉，或参考《小王子》里的句子"
+              ></textarea>
+            </div>
+
+            <div>
+              <label for="extra_blocked" class="label-with-tip"
+                >不想出现在文案里的词（可选）
+                <abbr
+                  class="help-tip"
+                  title="用逗号或换行分隔；与服务器词表合并，命中会打码。"
+                  >提示</abbr
+                ></label
+              >
+              <textarea
+                id="extra_blocked"
+                placeholder="例：加班，甲方（逗号、顿号或换行均可）"
+              ></textarea>
+            </div>
+
+            <div class="switch-row" aria-label="格式选项">
+              <label class="toggle-pill"
+                ><input id="use_emoji" type="checkbox" checked /><span>允许 emoji</span></label
+              >
+              <label class="toggle-pill"
+                ><input id="use_punctuation" type="checkbox" checked /><span>使用标点</span></label
+              >
+            </div>
+            <label class="toggle-pill toggle-pill-wide"
+              ><input id="append_copy_tail" type="checkbox" /><span>复制时在末尾加一句小尾巴</span></label
+            >
           </div>
-          <p class="fineprint">
-            摘录仅作风格参考，生成内容会改写融合；与上方「补充想法」会一起发给模型。
-          </p>
-        </div>
+        </details>
 
-        <div>
-          <label for="extra_blocked" class="label-with-tip"
-            >不想出现在文案里的词（可选）
-            <abbr class="help-tip" title="输入不希望出现在文案里的词，如「加班」「减肥」，用逗号或换行分隔；与服务器词表合并，命中会打码。">提示</abbr></label
-          >
-          <textarea
-            id="extra_blocked"
-            placeholder="例：加班，减肥，甲方（逗号、顿号或换行分隔均可）"
-          ></textarea>
-        </div>
-
-        <div class="btns btns-footer">
-          <button type="submit" class="primary" id="submit">生成三条</button>
-          <button type="button" class="btn-secondary" id="regen" disabled>换三条说法</button>
-        </div>
-        <p class="fineprint">长度按字符个数校验；结果中带固定行首标记以便解析。</p>
         <div class="err" id="err" hidden></div>
       </form>
 

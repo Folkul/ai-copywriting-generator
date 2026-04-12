@@ -11,8 +11,9 @@
   --shadow: 0 12px 40px rgba(28, 25, 23, 0.06);
   --ok: #15803d;
   --bad: #dc2626;
-  --radius: 14px;
-  --radius-sm: 10px;
+  --radius: 20px;
+  --radius-sm: 12px;
+  --panel-bg: rgba(249, 249, 249, 0.92);
 }
 
 * {
@@ -33,6 +34,126 @@ body {
   max-width: 720px;
   margin: 0 auto;
   padding: 2rem 1.25rem 3.5rem;
+}
+
+.panel-block {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.25rem 1.35rem;
+  margin-bottom: 1.25rem;
+}
+
+.panel-primary {
+  background: linear-gradient(180deg, #ffffff 0%, var(--panel-bg) 100%);
+  box-shadow: var(--shadow);
+}
+
+.adv-details {
+  margin-bottom: 1.25rem;
+}
+
+.adv-summary {
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text);
+  list-style: none;
+  padding: 0.15rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.adv-summary::-webkit-details-marker {
+  display: none;
+}
+
+.adv-summary::after {
+  content: "▾";
+  color: var(--muted);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.adv-details[open] .adv-summary::after {
+  transform: rotate(180deg);
+}
+
+.adv-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  margin-top: 1rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.switch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.86rem;
+  color: var(--text);
+  margin: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.toggle-pill input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--accent);
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.toggle-pill:has(:checked) {
+  background: var(--accent-bg);
+  border-color: rgba(180, 83, 9, 0.35);
+}
+
+.toggle-pill-wide {
+  align-self: flex-start;
+}
+
+.btns-primary {
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  gap: 0.65rem;
+}
+
+.btn-large {
+  padding: 0.65rem 1.25rem;
+  font-size: 0.95rem;
+  border-radius: var(--radius-sm);
+}
+
+.drop-title {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+}
+
+.drop-sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.form-card > .err {
+  margin-top: 1rem;
 }
 
 .hero {
@@ -62,58 +183,6 @@ body {
   max-width: 34rem;
   color: var(--muted);
   font-size: 0.95rem;
-}
-
-.scenario-strip {
-  text-align: center;
-  font-size: 0.9rem;
-  color: var(--muted);
-  margin: -0.5rem 0 1.25rem;
-  padding: 0.85rem 1rem;
-  border-style: dashed;
-  background: linear-gradient(180deg, #fffdfb 0%, var(--card) 100%);
-}
-
-.persona-intro {
-  font-size: 0.8rem;
-  color: var(--muted);
-  margin: 0 0 0.5rem;
-}
-
-.persona-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-bottom: 0.45rem;
-}
-
-.chip {
-  font-size: 0.78rem;
-  padding: 0.35rem 0.65rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: #fff;
-  color: var(--text);
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-}
-
-.chip:hover {
-  border-color: #d6d3d1;
-  background: #fafaf9;
-}
-
-.chip.active {
-  border-color: var(--accent);
-  background: var(--accent-bg);
-  color: var(--accent);
-}
-
-.persona-hint {
-  font-size: 0.78rem;
-  color: #a8a29e;
-  margin: 0 0 0.75rem;
-  font-style: italic;
 }
 
 .label-with-tip {
@@ -205,7 +274,14 @@ body {
 }
 
 .form-card {
-  padding-top: 1.5rem;
+  padding: 1.35rem 1.25rem 1.5rem;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.form-card > .panel-block:first-child {
+  margin-top: 0;
 }
 
 .out-card {
@@ -318,7 +394,7 @@ textarea {
   font-size: 0.92rem;
 }
 
-.drop strong {
+.drop .drop-title strong {
   color: var(--text);
 }
 
@@ -420,14 +496,6 @@ button:disabled {
   color: #a8a29e;
   margin: 0.5rem 0 0;
   line-height: 1.45;
-}
-
-.lyric-panel {
-  margin-top: 0.25rem;
-  padding: 1rem 1rem 0.75rem;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, #fffbeb 0%, #fdf4ff 100%);
-  border: 1px solid #fde68a;
 }
 
 .candidate {

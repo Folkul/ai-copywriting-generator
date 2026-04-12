@@ -3,7 +3,6 @@
 
   const LS = {
     style: "moments_style",
-    length: "moments_length_hint",
     emoji: "moments_emoji",
     punct: "moments_punct",
     provider: "moments_provider",
@@ -11,15 +10,11 @@
     max: "moments_max_chars",
     extra: "moments_extra_blocked",
     supplement: "moments_supplement",
+    inspiration: "moments_inspiration",
     outlang: "moments_output_language",
-    lyricMode: "moments_lyric_mode",
-    lyricSnip: "moments_lyric_snippet",
     copyTail: "moments_append_copy_tail",
   };
   const SS_DESC = "moments_last_description";
-
-  /** @type {"cool"|"fresh"|"hot"|null} */
-  let lastPersonaTone = null;
 
   const $ = (id) => document.getElementById(id);
   const drop = $("drop");
@@ -42,9 +37,10 @@
 
   function toneFromStyle(s) {
     const x = (s || "").trim();
-    if (/极简|冷淡|冷静|克制/.test(x)) return "cool";
-    if (/文艺|治愈|温柔|晒娃|忧郁|意象|留白|宝妈/.test(x)) return "fresh";
-    return "hot";
+    if (/冷静叙事|简约干净/.test(x)) return "cool";
+    if (/温暖治愈|高级|杂志风|杂志/.test(x)) return "fresh";
+    if (/俏皮可爱|俏皮/.test(x)) return "hot";
+    return "fresh";
   }
 
   function guessMoodLine(desc) {
@@ -73,8 +69,7 @@
     } else {
       moodLine.hidden = true;
     }
-    const rawTone = lastPersonaTone || toneFromStyle($("style").value);
-    const tone = rawTone === "cool" || rawTone === "fresh" || rawTone === "hot" ? rawTone : "hot";
+    const tone = toneFromStyle($("style").value);
     thermo.hidden = false;
     thermo.classList.remove("thermo--cool", "thermo--fresh", "thermo--hot");
     thermo.classList.add(`thermo--${tone}`);
@@ -82,7 +77,6 @@
 
   function savePrefs() {
     localStorage.setItem(LS.style, $("style").value);
-    localStorage.setItem(LS.length, $("length_hint").value);
     localStorage.setItem(LS.emoji, $("use_emoji").checked ? "1" : "0");
     localStorage.setItem(LS.punct, $("use_punctuation").checked ? "1" : "0");
     localStorage.setItem(LS.provider, $("provider").value);
@@ -90,16 +84,15 @@
     localStorage.setItem(LS.max, $("max_chars").value);
     localStorage.setItem(LS.extra, $("extra_blocked").value);
     localStorage.setItem(LS.supplement, $("supplement").value);
+    localStorage.setItem(LS.inspiration, $("inspiration").value);
     localStorage.setItem(LS.outlang, $("output_language").value);
-    localStorage.setItem(LS.lyricMode, $("lyric_mode").value);
-    localStorage.setItem(LS.lyricSnip, $("lyric_snippet").value);
     localStorage.setItem(LS.copyTail, $("append_copy_tail").checked ? "1" : "0");
   }
 
   function loadPrefs() {
     const g = (k, d) => localStorage.getItem(k) ?? d;
-    $("style").value = g(LS.style, $("style").value);
-    $("length_hint").value = g(LS.length, $("length_hint").value);
+    const sv = g(LS.style, "");
+    if (sv) $("style").value = sv;
     $("use_emoji").checked = g(LS.emoji, "1") === "1";
     $("use_punctuation").checked = g(LS.punct, "1") === "1";
     $("provider").value = g(LS.provider, $("provider").value);
@@ -107,9 +100,8 @@
     $("max_chars").value = g(LS.max, "72");
     $("extra_blocked").value = g(LS.extra, "");
     $("supplement").value = g(LS.supplement, "");
+    $("inspiration").value = g(LS.inspiration, "");
     $("output_language").value = g(LS.outlang, "zh-Hans");
-    $("lyric_mode").value = g(LS.lyricMode, "none");
-    $("lyric_snippet").value = g(LS.lyricSnip, "");
     $("append_copy_tail").checked = g(LS.copyTail, "0") === "1";
   }
 
@@ -144,7 +136,7 @@
       img.title = f.name;
       thumbs.appendChild(img);
     }
-    countEl.textContent = `已选 ${files.length} 张（最多 9 张）`;
+    countEl.textContent = `已选 ${files.length} 张`;
     setTimeout(() => urlObjs.forEach(URL.revokeObjectURL), 6e4);
   }
 
@@ -180,44 +172,19 @@
 
   [
     "style",
-    "length_hint",
     "min_chars",
     "max_chars",
     "provider",
     "extra_blocked",
     "supplement",
+    "inspiration",
     "output_language",
-    "lyric_mode",
-    "lyric_snippet",
   ].forEach((id) => {
     $(id).addEventListener("change", savePrefs);
     $(id).addEventListener("input", savePrefs);
   });
   ["use_emoji", "use_punctuation", "append_copy_tail"].forEach((id) => {
     $(id).addEventListener("change", savePrefs);
-  });
-
-  $("style").addEventListener("input", () => {
-    lastPersonaTone = null;
-    document.querySelectorAll("#persona_chips .chip").forEach((c) => c.classList.remove("active"));
-    $("persona_hint").hidden = true;
-  });
-
-  document.querySelectorAll("#persona_chips .chip").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      $("style").value = btn.dataset.style || "";
-      const h = btn.dataset.hint || "";
-      const hintEl = $("persona_hint");
-      if (h) {
-        hintEl.textContent = h;
-        hintEl.hidden = false;
-      }
-      const t = btn.dataset.tone;
-      lastPersonaTone = t === "cool" || t === "fresh" || t === "hot" ? t : toneFromStyle($("style").value);
-      document.querySelectorAll("#persona_chips .chip").forEach((c) => c.classList.remove("active"));
-      btn.classList.add("active");
-      savePrefs();
-    });
   });
 
   function renderCandidates(data) {
@@ -277,7 +244,6 @@
     const fd = new FormData();
     for (const f of files) fd.append("files", f);
     fd.append("style", $("style").value.trim());
-    fd.append("length_hint", $("length_hint").value.trim());
     fd.append("use_emoji", $("use_emoji").checked ? "true" : "false");
     fd.append("use_punctuation", $("use_punctuation").checked ? "true" : "false");
     fd.append("provider", $("provider").value);
@@ -285,9 +251,8 @@
     fd.append("max_chars", String(maxC));
     fd.append("extra_blocked", $("extra_blocked").value);
     fd.append("supplement", $("supplement").value);
+    fd.append("inspiration", $("inspiration").value);
     fd.append("output_language", $("output_language").value);
-    fd.append("lyric_mode", $("lyric_mode").value);
-    fd.append("lyric_snippet", $("lyric_snippet").value);
 
     $("submit").disabled = true;
     try {
@@ -327,7 +292,6 @@
     const body = {
       description,
       style: $("style").value.trim(),
-      length_hint: $("length_hint").value.trim(),
       use_emoji: $("use_emoji").checked,
       use_punctuation: $("use_punctuation").checked,
       provider: $("provider").value,
@@ -335,9 +299,8 @@
       max_chars: maxC,
       extra_blocked_lines: $("extra_blocked").value,
       supplement: $("supplement").value,
+      inspiration: $("inspiration").value,
       output_language: $("output_language").value,
-      lyric_mode: $("lyric_mode").value,
-      lyric_snippet: $("lyric_snippet").value,
     };
     regen.disabled = true;
     try {
@@ -361,7 +324,14 @@
     }
   });
 
+  function ensureStyleOption() {
+    const sel = $("style");
+    const ok = [...sel.options].some((o) => o.value === sel.value);
+    if (!ok && sel.options.length) sel.selectedIndex = 0;
+  }
+
   loadPrefs();
+  ensureStyleOption();
   renderThumbs();
   regen.disabled = !sessionStorage.getItem(SS_DESC);
 })();

@@ -11,6 +11,7 @@ OUTPUT_LANGUAGE_LABELS: dict[str, str] = {
     "fr": "法语",
     "ja": "日文",
     "ko": "韩文",
+    "mix": "中英自然混用",
 }
 
 OUTPUT_LANGUAGE_INSTRUCTIONS: dict[str, str] = {
@@ -20,6 +21,11 @@ OUTPUT_LANGUAGE_INSTRUCTIONS: dict[str, str] = {
     "fr": "除行首标记外，三条正文的正文内容全部使用自然、地道的法语。",
     "ja": "除行首标记外，三条正文的正文内容全部使用自然、地道的日文（可适当使用常见网络用语，勿过度）。",
     "ko": "除行首标记外，三条正文的正文内容全部使用自然、地道的韩文。",
+    "mix": (
+        "除行首标记外，三条正文的正文内容须符合：以简体中文为主要语言，但允许像小红书或微博博主那样，"
+        "自然地穿插英文单词、短句或品牌名（例如：今天的 vibe 很 chill，谁懂？）；不要整段翻译，要自然混用；"
+        "不要整段只用英文。"
+    ),
 }
 
 
@@ -44,6 +50,10 @@ def normalize_output_language(code: str | None) -> str:
         "韩文": "ko",
         "韩语": "ko",
     }
+    aliases["mix"] = "mix"
+    aliases["chinglish"] = "mix"
+    aliases["中英夹杂"] = "mix"
+    aliases["中英混用"] = "mix"
     key = aliases.get(raw.lower(), raw)
     if key not in OUTPUT_LANGUAGE_INSTRUCTIONS:
         return "zh-Hans"
@@ -77,12 +87,12 @@ def _language_block_triple(output_language: str) -> str:
     return f"""
 
 【输出语言】{label}（{inst}）
-【重要】为便于程序解析，三条必须仍使用以下行首标记（「候选」「数字」「全角或半角冒号」须完全一致），标记本身用简体中文；冒号后的正文才是最终发文内容，须为上述目标语言。"""
+【重要】为便于程序解析，三条必须仍使用以下行首标记（「候选」「数字」「全角或半角冒号」须完全一致），标记本身用简体中文；冒号后的正文才是最终发文内容，须严格遵循上文【输出语言】中的全部要求。"""
 
 
 def build_moments_caption_user_prompt(
     description: str,
-    style: str = "文艺青年",
+    style: str = "简约干净",
     length: str = "约50字",
     elements: Optional[list[str]] = None,
     *,
@@ -102,7 +112,8 @@ def build_moments_caption_user_prompt(
 
     if use_punctuation:
         punct_rule = (
-            "若为中文输出则使用中文标点；若为英文/法文等则使用该语言习惯标点。"
+            "【强制标点规范】必须使用规范的全角中文标点（，。！？）；禁止使用空格代替标点符号进行断句。"
+            "若输出英文则必须使用规范的半角标点。"
         )
     else:
         punct_rule = (
@@ -120,7 +131,7 @@ def build_moments_caption_user_prompt(
 - {punct_rule}
 {_language_block_single(output_language)}{_supplement_block(supplement)}
 
-请直接输出文案内容（仅目标语言正文），不要带任何前缀或说明。"""
+请直接输出文案正文，不要带任何前缀或说明；须符合上文【输出语言】中的要求。"""
 
 
 def build_triple_caption_user_prompt(
@@ -150,7 +161,10 @@ def build_triple_caption_user_prompt(
         emoji_rule = "不要使用任何 emoji、颜文字或类似符号。"
 
     if use_punctuation:
-        punct_rule = "若为中文正文则使用中文标点；若为英文/法文/日文/韩文正文则使用该语言习惯标点。"
+        punct_rule = (
+            "【强制标点规范】中文正文必须使用规范的全角中文标点（，。！？）；禁止使用空格代替标点符号进行断句。"
+            "若某条以英文或其他语言为主，则须使用该语言对应的规范标点（英文为半角）。"
+        )
     else:
         punct_rule = "尽量不要使用标点符号；各语言均可用空格分隔意群。"
 

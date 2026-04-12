@@ -1,0 +1,4 @@
+{"sessionId": "cadaef", "timestamp": 1775920257900, "location": "config.py:after_keys", "message": "dotenv and key lengths", "hypothesisId": "H1-H2", "data": {"dotenv_loaded_file": true, "cwd": "D:\\ai project", "qwen_key_len": 35, "deepseek_key_len": 35}}
+{"sessionId": "cadaef", "timestamp": 1775920323845, "location": "vision_tools.py:before_vl_call", "message": "calling VL", "hypothesisId": "H3-H5", "data": {"model": "qwen-vl-plus", "n_images": 9, "key_len": 35}}
+{"sessionId": "cadaef", "timestamp": 1775920329717, "location": "vision_tools.py:vl_response_meta", "message": "after VL call", "hypothesisId": "H3-H4", "data": {"status_code": 200, "code": "", "message": ""}}
+{"sessionId": "cadaef", "timestamp": 1775920329720, "location": "vision_tools.py:success", "message": "description ok", "hypothesisId": "H3", "data": {"desc_len": 154}}
