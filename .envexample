@@ -1,2 +1,20 @@
 QWEN_API_KEY=your_qwen_api_key_here
 DEEPSEEK_API_KEY=your_deepseek_api_key_here
+
+# --- Agent 自评审（可选，默认启用）---
+# 设 false/0/no 可关闭评审，退化为原有固定流程
+# AGENT_REVIEW_ENABLED=true
+# 三条中至少 N 条及格才算通过（默认 2）
+# AGENT_REVIEW_PASS_THRESHOLD=2
+# 单条平均分 >= 此值算及格（0-10，默认 6）
+# AGENT_REVIEW_SCORE_THRESHOLD=6
+# 评审不通过时最多重试几次（0=不重试，默认 1）
+# AGENT_REVIEW_MAX_RETRIES=1
+
+# --- Agent 偏好记忆（可选，默认启用）---
+# 设 false/0/no 可关闭记忆，退化为无偏好模式
+# AGENT_MEMORY_ENABLED=true
+# 历史文件保留的最大条数（默认 10）
+# AGENT_MEMORY_MAX_ENTRIES=10
+# 注入 prompt 时参考最近 N 条（默认 5）
+# AGENT_MEMORY_CONTEXT_ENTRIES=5

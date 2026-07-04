@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Sequence
 
 from config import (
     CAPTION_MAX_TOKENS,
@@ -90,6 +90,7 @@ def generate_caption(
     use_punctuation: bool = True,
     supplement: Optional[str] = None,
     output_language: str = "zh-Hans",
+    avoid_lexicon: Optional[Sequence[str]] = None,
     verbose: bool = True,
 ) -> Optional[str]:
     """根据图片描述生成单条朋友圈文案。"""
@@ -115,6 +116,7 @@ def generate_caption(
         use_punctuation=use_punctuation,
         supplement=supplement,
         output_language=output_language,
+        avoid_lexicon=list(avoid_lexicon) if avoid_lexicon else None,
     )
     text = post_chat_completion(
         backend.url,
@@ -181,8 +183,11 @@ def generate_three_captions(
     diversify: bool = False,
     supplement: Optional[str] = None,
     output_language: str = "zh-Hans",
+    avoid_lexicon: Optional[Sequence[str]] = None,
+    emoji_tone_appendix: Optional[str] = None,
     temperature: float = 0.82,
     verbose: bool = False,
+    memory_context: Optional[str] = None,
 ) -> Optional[str]:
     """
     一次 API 调用生成三条候选的原始文本；解析请用 parse_three_candidates。
@@ -208,6 +213,9 @@ def generate_three_captions(
         diversify=diversify,
         supplement=supplement,
         output_language=output_language,
+        avoid_lexicon=list(avoid_lexicon) if avoid_lexicon else None,
+        emoji_tone_appendix=emoji_tone_appendix,
+        memory_context=memory_context,
     )
     # 三条略长，单独给更大 max_tokens 上限但仍有封顶
     triple_cap = min(CAPTION_MAX_TOKENS * 2, 2000)

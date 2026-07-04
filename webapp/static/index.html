@@ -11,11 +11,17 @@
       <header class="hero">
         <p class="eyebrow">多图 · 配文</p>
         <h1>把画面写成几句话</h1>
-        <p class="lead">选好图，点生成；语气与字数在下方高级设置里可调。</p>
+        <p class="lead">可传图配文，也可无图写想法；语气与字数在下方高级设置里可调。</p>
       </header>
 
       <form id="f" class="card form-card">
         <section class="panel-block panel-primary" aria-label="上传与生成">
+          <label class="no-image-toggle toggle-pill toggle-pill-wide">
+            <input id="no_image_mode" type="checkbox" />
+            <span>📝 无图片，直接写想法</span>
+          </label>
+
+          <div id="image-upload-block">
           <div
             class="drop"
             id="drop"
@@ -38,6 +44,25 @@
           </div>
           <div class="thumbs" id="thumbs"></div>
           <p class="hint" id="count">已选 0 张</p>
+          <label class="toggle-pill toggle-pill-wide emoji-tone-row" id="emoji_tone_wrap">
+            <input id="emoji_color_suggest" type="checkbox" />
+            <span>🎨 根据图片色调智能搭配 emoji（实验性）</span>
+          </label>
+          </div>
+
+          <div id="text-idea-block" class="text-idea-block" hidden>
+            <label for="text-idea-input" class="sr-only">想法或关键词</label>
+            <textarea
+              id="text-idea-input"
+              maxlength="2000"
+              rows="3"
+              placeholder="写写你想表达的心情、关键词或一句话，例如：&#10;「周末爬山好累但值得」&#10;「今天咖啡拉花成功了」&#10;「想发点积极的话，但不知道写什么」"
+            ></textarea>
+            <p class="hint text-idea-hint">
+              💡 不用写完整句子，几个关键词也行，AI 会帮你扩展成适合朋友圈的短文案。
+            </p>
+          </div>
+
           <div class="btns btns-primary">
             <button type="submit" class="primary btn-large" id="submit">生成三条</button>
             <button type="button" class="btn-secondary btn-large" id="regen" disabled>换三条</button>
@@ -51,24 +76,16 @@
               <div>
                 <label for="style">文案风格</label>
                 <select id="style" name="style">
-                  <option value="简约干净：句子短、留白多，少用形容词堆砌。" selected>
-                    简约干净 (Clean)
-                  </option>
-                  <option value="温暖治愈：语气柔和克制，像可信的朋友，避免鸡汤式说教。">
-                    温暖治愈 (Warm)
-                  </option>
-                  <option
-                    value="高级感／杂志风：克制、有层次，可略带版面感，避免广告口号与浮夸修辞。"
-                  >
-                    高级感／杂志风 (Editorial)
-                  </option>
-                  <option value="俏皮可爱：轻松有灵气，可适度玩梗，避免低俗与冒犯。">
-                    俏皮可爱 (Playful)
-                  </option>
-                  <option value="冷静叙事：偏客观白描与观察，少抒情断言，像简短手记。">
-                    冷静叙事 (Storytelling)
-                  </option>
+                  <option value="humor" selected>😄 幽默风趣</option>
+                  <option value="literary">✍️ 文艺清新</option>
+                  <option value="concise">💼 简洁干练</option>
+                  <option value="lyrical">🎵 歌词感</option>
+                  <option value="daily_life">🏠 生活随记</option>
+                  <option value="travel">✈️ 旅行手记</option>
+                  <option value="fun">😂 玩梗整活</option>
+                  <option value="recommend">🛍️ 种草安利</option>
                 </select>
+                <p class="style-desc" id="style_desc">好笑、轻松，自带梗但不油腻</p>
               </div>
               <div>
                 <label for="provider">模型</label>
@@ -108,7 +125,8 @@
               <textarea
                 id="supplement"
                 maxlength="4000"
-                placeholder="想强调的细节、避雷、或一句参考语气…"
+                rows="2"
+                placeholder="想让 AI 知道的额外信息，例如：&#10;• 今天心情特别好，想发点开心的&#10;• 用词别太文艺，接地气一点&#10;• 配的是和闺蜜的合照"
               ></textarea>
             </div>
 
@@ -118,7 +136,7 @@
                 id="inspiration"
                 maxlength="1200"
                 rows="2"
-                placeholder="比如：像陈奕迅歌词的感觉，或参考《小王子》里的句子"
+                placeholder="参考某种语气或风格，例如：&#10;• 像陈奕迅《富士山下》那种淡淡的遗憾感&#10;• 模仿村上春树的简洁句子&#10;• 类似小红书探店博主的口吻"
               ></textarea>
             </div>
 
@@ -127,13 +145,13 @@
                 >不想出现在文案里的词（可选）
                 <abbr
                   class="help-tip"
-                  title="用逗号或换行分隔；与服务器词表合并，命中会打码。"
+                  title="用逗号或换行分隔；与服务器词表合并，命中会打码；并会提示模型主动避开这些词。"
                   >提示</abbr
                 ></label
               >
               <textarea
                 id="extra_blocked"
-                placeholder="例：加班，甲方（逗号、顿号或换行均可）"
+                placeholder="例如：emo、加班、凡尔赛"
               ></textarea>
             </div>
 
@@ -154,6 +172,12 @@
         <div class="err" id="err" hidden></div>
       </form>
 
+      <div id="progress_line" class="progress-line" hidden>
+        <span class="btn-spinner" style="width:14px;height:14px;border-width:2px;border-color:rgba(180,83,9,0.25);border-top-color:#b45309;"></span>
+        <span id="progress_text">正在准备…</span>
+        <span class="progress-dot"></span><span class="progress-dot"></span><span class="progress-dot"></span>
+      </div>
+
       <div class="card out-card" id="out" hidden>
         <h3 class="section-title">画面概要</h3>
         <div class="desc" id="desc"></div>
@@ -169,6 +193,11 @@
         </div>
         <h3 class="section-title">备选三条</h3>
         <div id="cands"></div>
+        <p id="memory_hint" class="memory-hint" hidden></p>
+        <div id="review_block" class="review-block" hidden>
+          <h3 class="section-title">🤖 Agent 审稿</h3>
+          <div id="review_content"></div>
+        </div>
       </div>
     </div>
     <script src="/static/app.js"></script>

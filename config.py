@@ -78,6 +78,24 @@ QWEN_TEXT_MODEL = _env("QWEN_TEXT_MODEL", "qwen-turbo")
 # 单张图片大小上限（字节）
 MAX_IMAGE_BYTES = int(_env("MAX_IMAGE_BYTES", str(10 * 1024 * 1024)) or str(10 * 1024 * 1024))
 
+# --- Agent 自评审（可选）---
+# 设为 "false" / "0" / "no" 可完全关闭评审，此时退化为原有固定流程
+AGENT_REVIEW_ENABLED = _env("AGENT_REVIEW_ENABLED", "true").lower() in ("1", "true", "yes", "on")
+# 三条中至少 N 条平均分 >= AGENT_REVIEW_SCORE_THRESHOLD 才算通过，否则触发重试
+AGENT_REVIEW_PASS_THRESHOLD = int(_env("AGENT_REVIEW_PASS_THRESHOLD", "2") or "2")
+# 单条平均分（safety/length/quality/diversity 四项均值）>= 此值算及格
+AGENT_REVIEW_SCORE_THRESHOLD = int(_env("AGENT_REVIEW_SCORE_THRESHOLD", "6") or "6")
+# 评审不通过时最多重试生成几次（0 = 不重试，推荐 1）
+AGENT_REVIEW_MAX_RETRIES = int(_env("AGENT_REVIEW_MAX_RETRIES", "1") or "1")
+
+# --- Agent 偏好记忆（可选）---
+# 设为 "false" / "0" / "no" 可关闭偏好记忆
+AGENT_MEMORY_ENABLED = _env("AGENT_MEMORY_ENABLED", "true").lower() in ("1", "true", "yes", "on")
+# 历史文件保留的最大条数
+AGENT_MEMORY_MAX_ENTRIES = int(_env("AGENT_MEMORY_MAX_ENTRIES", "10") or "10")
+# 注入 prompt 时参考最近 N 条
+AGENT_MEMORY_CONTEXT_ENTRIES = int(_env("AGENT_MEMORY_CONTEXT_ENTRIES", "5") or "5")
+
 # 敏感词表（可选）：项目根目录 blocked_words.txt，一行一词
 PROJECT_ROOT = Path(__file__).resolve().parent
 _bw = _env("BLOCKED_WORDS_FILE")
