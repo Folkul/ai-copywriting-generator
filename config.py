@@ -6,30 +6,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# #region agent log
-def _agent_debug_log(location: str, message: str, data: dict, hypothesis_id: str = "") -> None:
-    try:
-        import json
-        import time
-
-        p = Path(__file__).resolve().parent / "debug-cadaef.log"
-        line = {
-            "sessionId": "cadaef",
-            "timestamp": int(time.time() * 1000),
-            "location": location,
-            "message": message,
-            "hypothesisId": hypothesis_id,
-            "data": data,
-        }
-        with p.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(line, ensure_ascii=False) + "\n")
-    except Exception:
-        pass
-
-
-# #endregion
-
-_env_dotenv_ok = load_dotenv()
+load_dotenv()
 
 
 def _env(name: str, default: str = "") -> str:
@@ -39,20 +16,6 @@ def _env(name: str, default: str = "") -> str:
 # --- 密钥 ---
 QWEN_API_KEY = _env("QWEN_API_KEY")
 DEEPSEEK_API_KEY = _env("DEEPSEEK_API_KEY")
-
-# #region agent log
-_agent_debug_log(
-    "config.py:after_keys",
-    "dotenv and key lengths",
-    {
-        "dotenv_loaded_file": _env_dotenv_ok,
-        "cwd": str(Path.cwd()),
-        "qwen_key_len": len(QWEN_API_KEY),
-        "deepseek_key_len": len(DEEPSEEK_API_KEY),
-    },
-    "H1-H2",
-)
-# #endregion
 
 # --- 视觉（千问 VL）---
 QWEN_VL_MODEL = _env("QWEN_VL_MODEL", "qwen-vl-plus")
