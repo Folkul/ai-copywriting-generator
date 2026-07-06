@@ -123,26 +123,16 @@ def build_review_prompt(
         output_language, _REVIEW_LANG_INSTRUCTIONS["zh-Hans"]
     )
 
-    return f"""你是一位严格、公正的社交媒体文案审稿人。请评审以下三条候选朋友圈文案。
+    return f"""审稿人，给以下三条朋友圈文案打分（0-10 整数）：
 
-【候选文案】
 {cand_block}
 
-【评审标准】
-• 字数硬要求：每条正文必须在 {min_chars}～{max_chars} 个字符之间（按 Python len() 计数，含空格与 emoji）
-• 避雷词（严禁出现）：{avoid_str}{more_count}
-• 风格参考：{style_desc}
+要求：字数 {min_chars}～{max_chars}，禁用词 [{avoid_str}{more_count}]，风格参考「{style_desc}」
 
-【打分维度（每项 0-10 分，整数）】
-1. safety（避雷合规）：是否完全避开避雷词、无敏感擦边、无不安全表达
-2. length（字数合规）：正文长度是否严格落在 {min_chars}～{max_chars} 区间
-3. quality（质量创意）：是否自然流畅、有记忆点、符合朋友圈调性且不空洞
-4. diversity（差异性贡献）：本条与另外两条相比，在角度/修辞/情绪/叙事重点上是否有明显区分（三条完全相同打 0，各自独立打 10）
+维度：safety(避雷) length(字数) quality(质量) diversity(差异性)
 
-{lang_inst}
-
-【输出格式】严格输出一段合法 JSON（不要加 ``` 或任何解释文字）：
-{{"scores":[{{"index":1,"safety":10,"length":8,"quality":7,"diversity":6,"comment":"点评"}},{{"index":2,"safety":9,"length":7,"quality":8,"diversity":6,"comment":"点评"}},{{"index":3,"safety":10,"length":9,"quality":6,"diversity":6,"comment":"点评"}}],"summary":"整体评价，一句话"}}"""
+{lang_ist} 只输出 JSON：
+{{"scores":[{{"index":1,"safety":8,"length":8,"quality":7,"diversity":6,"comment":"短评"}},{{"index":2,safety:7,length:8,quality:7,diversity:6,comment:"短评"}},{{"index":3,safety:9,length:7,quality:8,diversity:8,comment:"短评"}}],"summary":"一句总评"}}"""
 
 
 # ---------------------------------------------------------------------------
@@ -272,8 +262,8 @@ def review_candidates(
         backend.api_key,
         backend.model,
         prompt,
-        temperature=0.3,  # 低温度保证评审一致性
-        max_tokens=min(CAPTION_MAX_TOKENS, 600),
+        temperature=0.1,  # 极低温度，更快更稳定
+        max_tokens=min(CAPTION_MAX_TOKENS, 300),
         verbose=verbose,
     )
 

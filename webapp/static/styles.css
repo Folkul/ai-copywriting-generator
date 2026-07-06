@@ -95,33 +95,37 @@ body {
 
 /* ── Hero ── */
 .hero {
-  margin-bottom: 2rem;
+  margin-bottom: 2.25rem;
   text-align: center;
 }
 
 .eyebrow {
-  font-size: 0.7rem;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 600;
   color: var(--accent);
-  margin: 0 0 0.5rem;
-  font-weight: 700;
+  background: var(--accent-bg);
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  margin: 0 0 0.85rem;
 }
 
 .hero h1 {
-  font-size: clamp(1.6rem, 5vw, 1.95rem);
+  font-size: clamp(1.85rem, 5.5vw, 2.35rem);
   font-weight: 800;
-  margin: 0 0 0.65rem;
+  margin: 0 0 0.75rem;
   letter-spacing: -0.03em;
+  line-height: 1.2;
   color: var(--text);
 }
 
 .lead {
   margin: 0 auto;
-  max-width: 34rem;
-  color: var(--muted);
-  font-size: 0.92rem;
+  max-width: 36rem;
+  color: var(--muted2);
+  font-size: 1.05rem;
   font-weight: 400;
+  line-height: 1.6;
 }
 
 /* ── Section titles ── */
@@ -490,6 +494,38 @@ button:disabled {
   color: var(--muted);
   margin: 0.5rem 0 0.85rem;
 }
+
+/* ── 封面主色展示 ── */
+.color-swatches {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.5rem 0 0.85rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.color-label {
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.color-dot {
+  display: inline-block;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  vertical-align: middle;
+  margin-right: 2px;
+}
+.color-warmth {
+  font-size: 0.76rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.color-warmth.warm { background: #fff7ed; color: #c2410c; }
+.color-warmth.cool { background: #eff6ff; color: #1d4ed8; }
+.color-warmth.neutral { background: #f5f5f4; color: #78716c; }
 
 /* ── 温度计 ── */
 .thermo { margin: 0 0 1rem; padding: 0.65rem 0 0.35rem; }

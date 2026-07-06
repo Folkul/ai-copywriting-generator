@@ -9,9 +9,9 @@
   <body>
     <div class="wrap">
       <header class="hero">
-        <p class="eyebrow">多图 · 配文</p>
-        <h1>把画面写成几句话</h1>
-        <p class="lead">可传图配文，也可无图写想法；语气与字数在下方高级设置里可调。</p>
+        <p class="eyebrow">🖼️ AI 朋友圈配文</p>
+        <h1>图拍好了，文案交给 AI</h1>
+        <p class="lead">上传照片，选个风格，一键生成三条候选文案，挑一条发出去。</p>
       </header>
 
       <form id="f" class="card form-card">
@@ -46,7 +46,7 @@
           <p class="hint" id="count">已选 0 张</p>
           <label class="toggle-pill toggle-pill-wide emoji-tone-row" id="emoji_tone_wrap">
             <input id="emoji_color_suggest" type="checkbox" />
-            <span>🎨 根据图片色调智能搭配 emoji（实验性）</span>
+            <span>🎨 让 AI 根据图片色调搭配 emoji</span>
           </label>
           </div>
 
@@ -182,6 +182,11 @@
         <h3 class="section-title">画面概要</h3>
         <div class="desc" id="desc"></div>
         <p class="mood-line" id="mood_line" hidden></p>
+        <div id="color_swatches" class="color-swatches" hidden>
+          <span class="color-label">🎨 封面主色</span>
+          <span id="color_dots"></span>
+          <span id="color_warmth" class="color-warmth"></span>
+        </div>
         <div class="thermo" id="thermo" hidden aria-hidden="true">
           <div class="thermo-caption">文案温度计</div>
           <div class="thermo-labels">

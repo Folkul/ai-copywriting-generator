@@ -457,11 +457,19 @@ async def api_full(
             paths.append(str(p))
 
         emoji_appendix = None
-        if want_emoji_tone and paths:
+        color_data = None
+        # 颜色分析始终做（只要有图），用于前端展示；复选框只控制是否写入 prompt
+        if paths:
             try:
-                _, warmth = extract_dominant_colors_and_warmth(paths[0])
-                emoji_appendix = build_emoji_tone_prompt_appendix(warmth)
+                colors, warmth = extract_dominant_colors_and_warmth(paths[0])
+                color_data = {
+                    "colors": [{"r": c[0], "g": c[1], "b": c[2]} for c in colors],
+                    "warmth": warmth,
+                }
+                if want_emoji_tone:
+                    emoji_appendix = build_emoji_tone_prompt_appendix(warmth)
             except Exception:
+                color_data = None
                 emoji_appendix = None
 
         desc = get_image_description(paths, verbose=False)
@@ -513,6 +521,8 @@ async def api_full(
         payload["emoji_tone_appendix"] = (
             (emoji_appendix or "")[:EMOJI_APPENDIX_STORE_MAX] if emoji_appendix else ""
         )
+        if color_data:
+            payload["color_analysis"] = color_data
         mem_hint = get_memory_display_hint()
         if mem_hint:
             payload["memory"] = mem_hint

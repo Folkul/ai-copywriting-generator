@@ -218,9 +218,7 @@
     await new Promise(r => setTimeout(r, 600));
     if (!_loadingActive) return;
     showProgress("正在写文案…");
-    await new Promise(r => setTimeout(r, 500));
-    if (!_loadingActive) return;
-    showProgress("正在评审…");
+    // 不在这里加"评审中"，评审是内部流程，由后端自动完成
   }
 
   async function sendFeedback(adopted) {
@@ -295,6 +293,28 @@
   ["use_emoji", "use_punctuation", "append_copy_tail", "emoji_color_suggest"].forEach((id) => {
     $(id).addEventListener("change", savePrefs);
   });
+
+  function renderColorAnalysis(data) {
+    const container = $("color_swatches");
+    const dotsEl = $("color_dots");
+    const warmthEl = $("color_warmth");
+    const ca = data.color_analysis;
+    if (!ca || !ca.colors || !ca.colors.length) {
+      if (container) container.hidden = true;
+      return;
+    }
+    if (container) container.hidden = false;
+    if (dotsEl) {
+      dotsEl.innerHTML = ca.colors.map(c =>
+        `<span class="color-dot" style="background:rgb(${c.r},${c.g},${c.b})" title="rgb(${c.r},${c.g},${c.b})"></span>`
+      ).join("");
+    }
+    if (warmthEl) {
+      const cls = ca.warmth === "暖色调" ? "warm" : ca.warmth === "冷色调" ? "cool" : "neutral";
+      warmthEl.textContent = ca.warmth || "";
+      warmthEl.className = "color-warmth " + cls;
+    }
+  }
 
   function renderMemory(data) {
     const block = $("memory_hint");
@@ -443,11 +463,15 @@
       hideProgress();
       sessionStorage.setItem(SS_DESC, data.description || "");
       sessionStorage.setItem(SS_EMOJI_APPENDIX, data.emoji_tone_appendix || "");
+      if (data.color_analysis) {
+        sessionStorage.setItem("moments_color_analysis", JSON.stringify(data.color_analysis));
+      }
       sessionStorage.removeItem(SS_FEEDBACK_SENT);  // 新生成，重置反馈标记
       descEl.textContent = data.description || "";
       updateResultsChrome(data.description || "");
       renderCandidates(data);
       renderReview(data);
+      renderColorAnalysis(data);
       renderMemory(data);
       out.hidden = false;
       regen.disabled = !(data.description && String(data.description).trim());
@@ -508,6 +532,11 @@
       updateResultsChrome(description);
       renderCandidates(data);
       renderReview(data);
+      // 颜色分析从 sessionStorage 恢复（换三条不会重新分析图片）
+      try {
+        const saved = sessionStorage.getItem("moments_color_analysis");
+        if (saved) renderColorAnalysis({ color_analysis: JSON.parse(saved) });
+      } catch { /* ignore */ }
       renderMemory(data);
       savePrefs();
     } catch (x) {
