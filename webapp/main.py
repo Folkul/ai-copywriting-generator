@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import re
 import tempfile
+import threading
+import time
+import uuid
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -30,6 +33,72 @@ EMOJI_APPENDIX_STORE_MAX = 800
 
 app = FastAPI(title="配图说", version="1.0")
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+# ── 异步审稿存储（后台线程写入，前端轮询读取）──────────────────────────────
+_review_store: dict[str, dict[str, Any]] = {}
+_review_store_lock = threading.Lock()
+
+
+def _bg_review(
+    review_id: str,
+    *,
+    candidates: list[str],
+    description: str,
+    min_chars: int,
+    max_chars: int,
+    avoid_lexicon: list[str],
+    output_language: str,
+    style: str,
+    provider: str,
+    memory_context: str | None,
+    blocked: list[str],
+) -> None:
+    """后台线程：跑评审 + 不达标重试，结果写入 _review_store。"""
+    try:
+        result = _run_agent_review_if_enabled(
+            candidates=candidates,
+            description=description,
+            min_chars=min_chars,
+            max_chars=max_chars,
+            avoid_lexicon=avoid_lexicon,
+            output_language=output_language,
+            style=style,
+            provider=provider,
+            memory_context=memory_context,
+            verbose=True,
+        )
+    except Exception as exc:
+        with _review_store_lock:
+            _review_store[review_id] = {
+                "status": "error",
+                "error": f"审稿异常：{exc}",
+                "ts": time.time(),
+            }
+        return
+
+    # 如果触发了重试，对重试候选做敏感词处理
+    if result.get("triggered_retry") and result.get("retry_candidates"):
+        masked_retry: list[dict[str, Any]] = []
+        for i, text in enumerate(result["retry_candidates"][:3]):
+            hits = find_hits(text, blocked)
+            masked = mask_sensitive(text, blocked)
+            ln = len(masked)
+            masked_retry.append({
+                "index": i + 1,
+                "text": masked,
+                "length": ln,
+                "length_ok": min_chars <= ln <= max_chars,
+                "sensitive_hits": hits,
+                "sensitive_masked": bool(hits),
+            })
+        result["retry_candidates"] = masked_retry
+
+    # 清理内部字段并确保 enabled 标记存在
+    result.pop("triggered_retry", None)
+    result["enabled"] = True
+
+    with _review_store_lock:
+        _review_store[review_id] = {"status": "done", "result": result, "ts": time.time()}
 
 
 def _bool_form(v: str) -> bool:
@@ -248,6 +317,7 @@ def _build_candidates_payload(
     avoid_lexicon: list[str],
     emoji_tone_appendix: str | None,
     memory_context: str | None = None,
+    async_review_id: str | None = None,
 ) -> dict[str, Any]:
     if not raw:
         return {"ok": False, "error": "文案模型未返回内容，请稍后重试或更换模型。"}
@@ -277,6 +347,7 @@ def _build_candidates_payload(
                 cands = cands2
 
     items: list[dict[str, Any]] = []
+    cand_texts: list[str] = []
     for i, text in enumerate(cands[:3]):
         hits = find_hits(text, blocked)
         masked = mask_sensitive(text, blocked)
@@ -291,56 +362,79 @@ def _build_candidates_payload(
                 "sensitive_masked": bool(hits),
             }
         )
-
-    # ── Agent 自评审 + 不达标重试 ──────────────────────────────────────────
-    review_info: dict[str, Any] = _run_agent_review_if_enabled(
-        candidates=[it["text"] for it in items],
-        description=description or "",
-        min_chars=min_chars,
-        max_chars=max_chars,
-        avoid_lexicon=avoid_lexicon,
-        output_language=output_language,
-        style=style,
-        provider=provider,
-        memory_context=memory_context,
-        verbose=True,
-    )
-
-    if (
-        review_info.get("triggered_retry")
-        and review_info.get("retry_candidates")
-        and review_info.get("retry_review")
-    ):
-        # 用重试结果替换
-        retry_cands: list[str] = review_info["retry_candidates"]
-        retry_review: dict = review_info["retry_review"]
-        new_items: list[dict[str, Any]] = []
-        for i, text in enumerate(retry_cands[:3]):
-            hits = find_hits(text, blocked)
-            masked = mask_sensitive(text, blocked)
-            ln = len(masked)
-            new_items.append(
-                {
-                    "index": i + 1,
-                    "text": masked,
-                    "length": ln,
-                    "length_ok": min_chars <= ln <= max_chars,
-                    "sensitive_hits": hits,
-                    "sensitive_masked": bool(hits),
-                }
-            )
-        items = new_items
-        review_info = retry_review
-
-    # 清理内部字段，不暴露给前端
-    review_info.pop("triggered_retry", None)
-    review_info.pop("retry_candidates", None)
-    review_info.pop("retry_review", None)
+        cand_texts.append(masked)
 
     payload: dict[str, Any] = {"ok": True, "candidates": items}
-    if review_info:
-        review_info["enabled"] = True  # 确保前端 renderReview 能通过 !review.enabled 检查
-        payload["review"] = review_info
+
+    # ── Agent 自评审 ──────────────────────────────────────────────────────
+    if async_review_id:
+        # 异步模式：后台线程跑审稿，不阻塞响应
+        threading.Thread(
+            target=_bg_review,
+            args=(async_review_id,),
+            kwargs=dict(
+                candidates=cand_texts,
+                description=description or "",
+                min_chars=min_chars,
+                max_chars=max_chars,
+                avoid_lexicon=avoid_lexicon,
+                output_language=output_language,
+                style=style,
+                provider=provider,
+                memory_context=memory_context,
+                blocked=blocked,
+            ),
+            daemon=True,
+        ).start()
+        payload["review_id"] = async_review_id
+    else:
+        # 同步模式（CLI 等场景）
+        review_info: dict[str, Any] = _run_agent_review_if_enabled(
+            candidates=cand_texts,
+            description=description or "",
+            min_chars=min_chars,
+            max_chars=max_chars,
+            avoid_lexicon=avoid_lexicon,
+            output_language=output_language,
+            style=style,
+            provider=provider,
+            memory_context=memory_context,
+            verbose=True,
+        )
+        if (
+            review_info.get("triggered_retry")
+            and review_info.get("retry_candidates")
+            and review_info.get("retry_review")
+        ):
+            retry_cands: list[str] = review_info["retry_candidates"]
+            retry_review: dict = review_info["retry_review"]
+            new_items: list[dict[str, Any]] = []
+            for i, text in enumerate(retry_cands[:3]):
+                hits = find_hits(text, blocked)
+                masked = mask_sensitive(text, blocked)
+                ln = len(masked)
+                new_items.append(
+                    {
+                        "index": i + 1,
+                        "text": masked,
+                        "length": ln,
+                        "length_ok": min_chars <= ln <= max_chars,
+                        "sensitive_hits": hits,
+                        "sensitive_masked": bool(hits),
+                    }
+                )
+            items = new_items
+            review_info = retry_review
+            payload["candidates"] = items
+
+        review_info.pop("triggered_retry", None)
+        review_info.pop("retry_candidates", None)
+        review_info.pop("retry_review", None)
+
+        if review_info:
+            review_info["enabled"] = True
+            payload["review"] = review_info
+
     return payload
 
 
@@ -427,6 +521,7 @@ async def api_full(
             avoid_lexicon=extra_list,
             emoji_tone_appendix=emoji_appendix,
             memory_context=mem_ctx,
+            async_review_id=str(uuid.uuid4())[:8],
         )
         payload["description"] = desc
         payload["output_language"] = olang
@@ -516,6 +611,7 @@ async def api_full(
             avoid_lexicon=extra_list,
             emoji_tone_appendix=emoji_appendix,
             memory_context=mem_ctx,
+            async_review_id=str(uuid.uuid4())[:8],
         )
         payload["description"] = desc
         payload["output_language"] = olang
@@ -605,6 +701,7 @@ def api_regenerate(body: RegenerateBody) -> JSONResponse:
         avoid_lexicon=extra,
         emoji_tone_appendix=emoji_apx,
         memory_context=mem_ctx,
+        async_review_id=str(uuid.uuid4())[:8],
     )
     payload["output_language"] = olang
     mem_hint = get_memory_display_hint()
@@ -613,6 +710,25 @@ def api_regenerate(body: RegenerateBody) -> JSONResponse:
     if not payload.get("ok"):
         return JSONResponse(payload, status_code=502)
     return JSONResponse(payload)
+
+
+@app.get("/api/review/{review_id}")
+def api_review_poll(review_id: str) -> JSONResponse:
+    """前端轮询审稿结果。返回 {"status":"pending"} 或 {"status":"done","review":{...}}。"""
+    with _review_store_lock:
+        entry = _review_store.get(review_id)
+    if entry is None:
+        return JSONResponse({"status": "pending"})
+    if entry.get("status") == "done":
+        # 读取后立即清理，避免内存堆积
+        with _review_store_lock:
+            _review_store.pop(review_id, None)
+        return JSONResponse({"status": "done", "review": entry["result"]})
+    if entry.get("status") == "error":
+        with _review_store_lock:
+            _review_store.pop(review_id, None)
+        return JSONResponse({"status": "error", "error": entry.get("error", "未知错误")})
+    return JSONResponse({"status": "pending"})
 
 
 class FeedbackBody(BaseModel):

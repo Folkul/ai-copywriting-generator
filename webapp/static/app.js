@@ -316,6 +316,25 @@
     }
   }
 
+  function pollForReview(reviewId, attempts = 0) {
+    if (attempts >= 15) return; // 最多等 ~35 秒
+    const delay = attempts === 0 ? 1500 : 2500;
+    setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/review/${reviewId}`);
+        const r = await res.json().catch(() => ({}));
+        if (r.status === "done" && r.review) {
+          renderReview({ review: r.review });
+          return;
+        }
+        if (r.status === "error") return; // 静默放弃
+        pollForReview(reviewId, attempts + 1);
+      } catch {
+        pollForReview(reviewId, attempts + 1);
+      }
+    }, delay);
+  }
+
   function renderReview(data) {
     const block = $("review_block");
     const content = $("review_content");
@@ -460,6 +479,7 @@
       renderReview(data);
       renderColorAnalysis(data);
       renderMemory(data);
+      if (data.review_id) pollForReview(data.review_id);
       out.hidden = false;
       regen.disabled = !(data.description && String(data.description).trim());
       savePrefs();
@@ -525,6 +545,7 @@
         if (saved) renderColorAnalysis({ color_analysis: JSON.parse(saved) });
       } catch { /* ignore */ }
       renderMemory(data);
+      if (data.review_id) pollForReview(data.review_id);
       savePrefs();
     } catch (x) {
       hideProgress();
