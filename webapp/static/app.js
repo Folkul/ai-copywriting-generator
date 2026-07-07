@@ -121,13 +121,9 @@
     localStorage.setItem(LS.provider, $("provider").value);
     localStorage.setItem(LS.min, $("min_chars").value);
     localStorage.setItem(LS.max, $("max_chars").value);
-    localStorage.setItem(LS.extra, $("extra_blocked").value);
-    localStorage.setItem(LS.supplement, $("supplement").value);
-    localStorage.setItem(LS.inspiration, $("inspiration").value);
     localStorage.setItem(LS.outlang, $("output_language").value);
     localStorage.setItem(LS.copyTail, $("append_copy_tail").checked ? "1" : "0");
     localStorage.setItem(LS.noImage, noImageMode.checked ? "1" : "0");
-    localStorage.setItem(LS.textIdea, textIdeaInput.value);
     localStorage.setItem(LS.emojiColor, emojiColorSuggest.checked ? "1" : "0");
   }
 
@@ -140,13 +136,9 @@
     $("provider").value = g(LS.provider, $("provider").value);
     $("min_chars").value = g(LS.min, "10");
     $("max_chars").value = g(LS.max, "72");
-    $("extra_blocked").value = g(LS.extra, "");
-    $("supplement").value = g(LS.supplement, "");
-    $("inspiration").value = g(LS.inspiration, "");
     $("output_language").value = g(LS.outlang, "zh-Hans");
     $("append_copy_tail").checked = g(LS.copyTail, "0") === "1";
     noImageMode.checked = g(LS.noImage, "0") === "1";
-    textIdeaInput.value = g(LS.textIdea, "");
     emojiColorSuggest.checked = g(LS.emojiColor, "0") === "1";
     syncNoImageUi();
   }
@@ -276,11 +268,7 @@
     "min_chars",
     "max_chars",
     "provider",
-    "extra_blocked",
-    "supplement",
-    "inspiration",
     "output_language",
-    "text-idea-input",
   ].forEach((id) => {
     $(id).addEventListener("change", savePrefs);
     $(id).addEventListener("input", savePrefs);
