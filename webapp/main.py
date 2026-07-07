@@ -339,6 +339,7 @@ def _build_candidates_payload(
 
     payload: dict[str, Any] = {"ok": True, "candidates": items}
     if review_info:
+        review_info["enabled"] = True  # 确保前端 renderReview 能通过 !review.enabled 检查
         payload["review"] = review_info
     return payload
 
