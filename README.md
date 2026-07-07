@@ -12,15 +12,13 @@
 
 ## 效果演示
 
-> 上传图片 → 生成三条 → 展开评审面板的完整流程截图或 GIF
-
 ---
 
 ## 快速开始
 
 ### 环境要求
 - Python 3.10+
-- `pip install -r requirements.txt`（含 `Pillow`、`scikit-learn`，用于可选的 emoji 色调搭配功能）
+- `pip install -r requirements.txt`（含 `Pillow`、`scikit-learn`，用于封面主色提取与 emoji 色调建议）
 
 ### 配置密钥
 复制 `.envexample` 为 `.env`，按需填写：
@@ -38,8 +36,12 @@ uvicorn webapp.main:app --host 127.0.0.1 --port 8765
 
 ### 命令行版
 ```bash
-python main.py test.jpg --style 文艺青年 --language en
-python main.py --list-providers   # 查看当前可用后端
+# 单条文案（快速）
+python main.py test.jpg --style 幽默风趣 --language en
+# 三条候选（与网页版一致）
+python test_vision.py test.jpg --three --style 文艺清新
+# 查看可用后端
+python main.py --list-providers
 ```
 
 ---
@@ -72,7 +74,7 @@ python main.py --list-providers   # 查看当前可用后端
 
 ### 双界面
 - **Web UI**：拖拽/多选/文件夹上传、无图模式、高级设置面板、Agent 审稿面板、偏好记忆提示条、localStorage 偏好持久化
-- **CLI**：`main.py` 支持全部参数；`test_vision.py` 用于快速联调看图+文案管道
+- **CLI**：`main.py` 支持基本参数（单条文案）；`test_vision.py --three` 提供与网页一致的三候选体验
 
 ---
 
@@ -86,7 +88,7 @@ python main.py --list-providers   # 查看当前可用后端
 | 文案生成 | DeepSeek / 通义千问文本（OpenAI 兼容接口，通过 `llm/http_chat.py` 统一调用） |
 | Agent 自评审 | `agent_review.py` |
 | Agent 偏好记忆 | `agent_memory.py`（本地 JSON 文件，无数据库） |
-| 图像分析 | Pillow + scikit-learn（KMeans 主色聚类，用于 emoji 色调建议） |
+| 图像分析 | Pillow + scikit-learn（KMeans 主色聚类，前端展示色块 + 可选的 emoji 色调建议） |
 
 ### 关键文件
 
@@ -101,7 +103,7 @@ agent_memory.py        风格偏好历史记录与自然语言摘要
 safety.py              敏感词合并与脱敏
 media_validate.py      上传图片魔数校验
 image_color_utils.py   封面主色提取与冷暖倾向判断
-webapp/main.py         Web API（/api/full、/api/regenerate、/api/feedback）
+webapp/main.py         Web API（/api/full、/api/regenerate、/api/feedback、/api/review）
 webapp/static/*        前端页面（index.html、app.js、styles.css）
 main.py                CLI 入口
 test_agent_memory.py   偏好记忆单元测试（14 项）
@@ -116,7 +118,7 @@ test_vision.py         VL + 文案联调脚本
 
 ### 自评审 + 不达标重试
 
-生成完成后，**额外调用一次模型**扮演审稿人，从四个维度逐条打分（每项 0-10）：
+生成完成后，**后台异步调用一次模型**扮演审稿人（不阻塞文案返回），从四个维度逐条打分（每项 0-10）：
 
 | 维度 | 检查内容 |
 |---|---|
@@ -125,7 +127,7 @@ test_vision.py         VL + 文案联调脚本
 | 质量创意 | 是否自然流畅、有记忆点、符合朋友圈调性 |
 | 差异性 | 三条之间的角度/修辞/情绪是否有明显区分 |
 
-若及格数 < 阈值（默认 ≥2 条，单条均分 ≥6），自动以更高温度 + diversify 模式重试一次。前端有 **"Agent 审稿"面板**展示每条的四维评分、✅/❌ 判定、审稿人点评和是否触发重试。
+若及格数 < 阈值（默认 ≥2 条，单条均分 ≥6），自动以更高温度 + diversify 模式后台重试一次。前端有 **"Agent 审稿"面板**（文案出现后几秒自动弹出）展示每条的四维评分、✅/❌ 判定、审稿人点评和是否触发重试。
 
 #### 环境变量
 
