@@ -131,7 +131,7 @@ def build_review_prompt(
 
 维度：safety(避雷) length(字数) quality(质量) diversity(差异性)
 
-{lang_ist} 只输出 JSON：
+{lang_inst} 只输出 JSON：
 {{"scores":[{{"index":1,"safety":8,"length":8,"quality":7,"diversity":6,"comment":"短评"}},{{"index":2,safety:7,length:8,quality:7,diversity:6,comment:"短评"}},{{"index":3,safety:9,length:7,quality:8,diversity:8,comment:"短评"}}],"summary":"一句总评"}}"""
 
 

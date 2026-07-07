@@ -217,8 +217,7 @@
     showProgress(hasImages ? "正在看图…" : "正在理解你的想法…");
     await new Promise(r => setTimeout(r, 600));
     if (!_loadingActive) return;
-    showProgress("正在写文案…");
-    // 不在这里加"评审中"，评审是内部流程，由后端自动完成
+    showProgress("正在写文案…（模型推理中，通常需要十几到二十几秒）");
   }
 
   async function sendFeedback(adopted) {
